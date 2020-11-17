@@ -50,6 +50,7 @@ def test_sentences(grammar):
     sent = demos[0]
 
     for t in test:
+        print("Processing: " + str(t))
         reference = list(treebank.tagged_words(t))
 
 
@@ -68,10 +69,17 @@ def test_sentences(grammar):
         parser = ViterbiParser(fixed_grammar)
 
         print("Parsing...")
+        #Gets list of all possible trees, the most likely tree is at index 0
         parses = parser.parse_all(tokens)
-        #leafs = parses[0].pos()
+        leafs = parses[0].pos()
 
-        print(parses)
+        correct_tags = 0.0
+        for i in range(len(leafs)):
+            if leafs[i] == reference[i]:
+                correct_tags += 1.0
+
+
+        print(str(correct_tags/len(leafs)))
 
 if __name__ == "__main__":
     grammar = train_grammar()
