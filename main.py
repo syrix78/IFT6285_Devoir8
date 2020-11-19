@@ -1,3 +1,7 @@
+import collections
+import itertools
+import time
+
 from nltk.corpus import treebank
 from nltk import treetransforms
 from nltk import induce_pcfg
@@ -7,8 +11,9 @@ from nltk import Production
 from nltk.parse import ViterbiParser
 
 train = treebank.fileids()[:190]
-test = treebank.fileids()[190:]
+test = treebank.fileids()[195:]
 
+#It is impossible to use all productions rules because the nltk VertibiParser is too slow
 
 def train_grammar(unknown_words=[]):
 
@@ -19,23 +24,29 @@ def train_grammar(unknown_words=[]):
             # perform optional tree transformations, e.g.:
             tree.collapse_unary(collapsePOS=False)  # Remove branches A-B-C into A-B+C
             tree.chomsky_normal_form(horzMarkov=2)  # Remove A->(B,C,D) into A->B,C+D->D
-            tree_prods = tree.productions()
-            unknown_words_prods = []
-            for u in unknown_words:
-                rhs = [u]
-                for p in tree_prods:
-                    lhs = p._lhs
-                    new_prod = Production(lhs, rhs)
-                    unknown_words_prods.append(new_prod)
+            #tree_prods = tree.productions()
+
 
             productions += tree.productions()
-            productions += unknown_words_prods
 
 
-
+    unknown_words_prods = []
+    for u in unknown_words:
+        rhs = [u]
+        for p in productions:
+            if isinstance(p._rhs[0], str):
+                lhs = p._lhs
+                new_prod = Production(lhs, rhs)
+                unknown_words_prods.append(new_prod)
+    productions += unknown_words_prods
+    #counter = collections.Counter(productions)
+    #if len(unknown_words) == 0:
+        #n_comms = [item for item, count in counter.most_common(100) for i in range(count)]
+    #else:
+    n_comms = productions
     S = Nonterminal('S')
     #print(productions)
-    grammar = induce_pcfg(S, productions)
+    grammar = induce_pcfg(S, n_comms)
 
 
     return grammar
@@ -70,7 +81,10 @@ def test_sentences(grammar):
 
         print("Parsing...")
         #Gets list of all possible trees, the most likely tree is at index 0
+        start = time.time()
         parses = parser.parse_all(tokens)
+        print("Time")
+        print(start - time.time())
         leafs = parses[0].pos()
 
         correct_tags = 0.0
@@ -82,6 +96,8 @@ def test_sentences(grammar):
         print(str(correct_tags/len(leafs)))
 
 if __name__ == "__main__":
+
+
     grammar = train_grammar()
     test_sentences(grammar)
     #print(grammar)
